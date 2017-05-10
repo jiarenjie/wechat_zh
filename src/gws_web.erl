@@ -6,24 +6,29 @@
 %%% @end
 %%% Created : 09. 五月 2017 14:42
 %%%-------------------------------------------------------------------
--module(gws_webapplications).
+-module(gws_web).
 -author("jiarj").
 -behavior(gen_server).
 
 -record(state, {}).
+-define(SERVER, ?MODULE).
+
+-export([start_link/0]).
 
 %% API
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
+start_link() ->
+  gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
+
 
 init([]) ->
-  application:start(cowboy),
-
   Port = port(),
   TransOpts = [{port, Port}],
   Router = gws_web_utils:get_app_router(),
-
+  lager:debug("Router~p", [Router]),
   Dispatch = cowboy_router:compile([{'_', Router}]),
+  lager:debug("Dispatch~p", [Dispatch]),
   CowBoyStarted = cowboy:start_http(http, 100,
     TransOpts,
     [
@@ -38,13 +43,9 @@ init([]) ->
       lager:error("cowboy started error!Code = ~p,Reason = ~p", [Code, Reason])
 
   end,
+  {ok, #state{}}.
 
-
-
-
-  erlang:error(not_implemented).
-
-handle_call(_Request, _From, State) ->
+handle_call(get_, _From, State) ->
   {reply, ok, State}.
 
 handle_cast(_Request, State) ->

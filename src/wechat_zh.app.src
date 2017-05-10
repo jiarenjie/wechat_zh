@@ -8,6 +8,7 @@
     ,stdlib
     ,lager
     ,cowboy
+    ,user_admin
    ]},
   {env,[]},
   {modules, []},

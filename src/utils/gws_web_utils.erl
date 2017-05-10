@@ -13,6 +13,6 @@
 -export([get_app_router/0]).
 
 get_app_router()->
-  Router = application:get_env(wechat_zh,router),
-  Routers=[ apply(M,get_router,[]) ||M<-Router],
+  {ok,Router} = application:get_env(wechat_zh,router),
+  Routers=[ apply(M,get_router,[]) || M<-Router],
   lists:flatten(Routers).

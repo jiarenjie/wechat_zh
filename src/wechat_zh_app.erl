@@ -16,23 +16,8 @@
 
 start(_StartType, _StartArgs) ->
     application:start(cowboy),
-
-    Port = port(),
-    TransOpts = [{port, Port}],
-    Dispatch = cowboy_router:compile([
-        {'_', [
-            {"/test", test_handler, []}
-        ]}
-    ]),
-    lager:debug(" ======================================== "),
-    cowboy:start_http(http, 100,
-        TransOpts,
-        [
-            {env, [{dispatch, Dispatch}]}
-        ]),
-    lager:debug(" ========================================= "),
-
-
+    application:start(user_admin),
+    gws_web:start_link(),
     wechat_zh_sup:start_link().
 
 %%--------------------------------------------------------------------
