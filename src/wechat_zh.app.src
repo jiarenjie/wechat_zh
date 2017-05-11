@@ -8,6 +8,7 @@
     ,stdlib
     ,lager
     ,cowboy
+    ,mnesia_wechat
     ,user_admin
    ]},
   {env,[]},

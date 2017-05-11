@@ -27,7 +27,11 @@ init([]) ->
   TransOpts = [{port, Port}],
   Router = gws_web_utils:get_app_router(),
   lager:debug("Router~p", [Router]),
-  Dispatch = cowboy_router:compile([{'_', Router}]),
+  Dispatch = cowboy_router:compile([{'_', [
+    {"/wechat", wechat_check_handler, []}
+    ,{"/wechat/login", wechat_login_handler, []}
+    ,{"/wechat/callback", wechat_callback_handler, []}
+    |Router]}]),
   lager:debug("Dispatch~p", [Dispatch]),
   CowBoyStarted = cowboy:start_http(http, 100,
     TransOpts,
