@@ -31,7 +31,7 @@ process(Vals,Req) ->
   Resp = try
            JWT = lists:foldl(F, Vals, Pipeline),
            Req2 = cowboy_req:set_resp_header(<<"authorization">>,JWT,Req),
-           {200,Req2,<<"jwt">> }
+           {200,Req2,<<"login">> }
 
          catch
            throw:{Atom, RespCd, RespMsg}
@@ -42,7 +42,7 @@ process(Vals,Req) ->
              {ok, BodyFail} = fun_render_fail_resp_model(wechat_process_callback, RespCd, RespMsg),
              Redirct_Url = <<"/wechat/login">>,
              Req3 = cowboy_req:set_resp_header(<<"location">>,Redirct_Url,Req),
-             {302, Req3 ,BodyFail}
+             {200, Req3 ,BodyFail}
          end,
   Resp.
 

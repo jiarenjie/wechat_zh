@@ -7,6 +7,7 @@
 %%% Created : 27. 四月 2017 14:06
 %%%-------------------------------------------------------------------
 -module(wechat_process_callback).
+-include_lib("eunit/include/eunit.hrl").
 -author("jiarj").
 
 %% API
@@ -65,7 +66,8 @@ save_access_token(Resp)  ->
         ,{<<"sex">> , to_binary(Sex)}],
       gws_mnesia:save(repo_user,Model),
       %%生成jwt
-      Payload = [{<<"openid">>,OPENID},{<<"role">>,Role1},{<<"timestamp">>,Timestamp}],
+      Payload = [{<<"openid">>,OPENID},{<<"nickname">>,Nickname},{<<"role">>,Role1},{<<"timestamp">>,Timestamp}],
+      lager:debug("~n Payload = ~p~n", [Payload]),
       JWT = ejwt:encode(Payload, <<"secret">>),
       lager:debug("~n JWT = ~p~n", [JWT]),
       JWT;
@@ -80,7 +82,7 @@ save_access_token(Resp)  ->
         ,{<<"sex">> , to_binary(Sex)}],
       gws_mnesia:save(repo_user,Model),
       %%生成jwt
-      Payload = [{<<"openid">>,OPENID},{<<"role">>,<<"empty">>},{<<"timestamp">>,Timestamp}],
+      Payload = [{<<"openid">>,OPENID},{<<"nickname">>,Nickname},{<<"role">>,<<"empty">>},{<<"timestamp">>,Timestamp}],
       JWT = ejwt:encode(Payload, <<"secret">>),
       lager:debug("~n JWT = ~p~n", [JWT]),
       JWT
@@ -96,3 +98,28 @@ to_binary(Sex) when is_integer(Sex)->
   integer_to_binary(Sex);
 to_binary(Sex) when is_binary(Sex)->
   Sex.
+
+decode_test() ->
+  Expected = [
+    {<<"openid">>,<<"ofD9N0wpZmyZrpT5A4FobW055TKY">>}
+    ,{<<"nickname">>,<<233,131,143,228,187,129,230,157,176>>}
+    ,{<<"role">>,<<"admin">>}
+    ,{<<"timestamp">>,1494552908}
+  ],
+  JWT = <<"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+  "eyJvcGVuaWQiOiJvZkQ5TjB3cFpteVpycFQ1QTRGb2JXMDU1VEtZIiwibmlja25hbWUiOiLpg4_ku4HmnbAiLCJyb2xlIjoiYWRtaW4iLCJ0aW1lc3RhbXAiOjE0OTQ1NTI5MDh9."
+  "YTRu43ctKXlkEZKfroE469YFK0IQF_4bLfmUDtY_8so">>,
+  ?assertEqual(Expected, ejwt:decode(JWT, <<"secret">>)).
+
+encode_test() ->
+  Expected = <<"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+  "eyJvcGVuaWQiOiJvZkQ5TjB3cFpteVpycFQ1QTRGb2JXMDU1VEtZIiwibmlja25hbWUiOiLpg4_ku4HmnbAiLCJyb2xlIjoiYWRtaW4iLCJ0aW1lc3RhbXAiOjE0OTQ1NTI5MDh9."
+  "YTRu43ctKXlkEZKfroE469YFK0IQF_4bLfmUDtY_8so">>,
+  Payload = [
+    {<<"openid">>,<<"ofD9N0wpZmyZrpT5A4FobW055TKY">>}
+    ,{<<"nickname">>,<<233,131,143,228,187,129,230,157,176>>}
+    ,{<<"role">>,<<"admin">>}
+    ,{<<"timestamp">>,1494552908}
+  ],
+  ?assertEqual(Expected, ejwt:encode(Payload, <<"secret">>)).
+
