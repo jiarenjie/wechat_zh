@@ -77,9 +77,8 @@ delete_private_template(AccessToken, TemplateId) ->
     wechat_util:http_post(URL, TemplateIdBinary).
 
 send_template_message(AccessToken, Message) ->
-    URL = list_to_binary(?API_URL_PREFIX ++ "/cgi-bin/message/template/send?access_token="++AccessToken),
-    MessageBinary = list_to_binary(Message),
-    wechat_util:http_post(URL, MessageBinary).
+    URL = ?API_URL_PREFIX ++ "/cgi-bin/message/template/send?access_token="++binary_to_list(AccessToken),
+    wechat_util:http_post(URL, Message).
 
 get_autoreply_info(AccessToken) ->
     URL = list_to_binary(?API_URL_PREFIX ++ "/cgi-bin/get_current_autoreply_info?access_token="++AccessToken),

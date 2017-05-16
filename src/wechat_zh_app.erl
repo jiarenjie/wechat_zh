@@ -18,6 +18,7 @@ start(_StartType, _StartArgs) ->
     application:start(cowboy),
     application:start(user_admin),
     gws_web:start_link(),
+    access_token_utils:init_access_token(),
     wechat_zh_sup:start_link().
 
 %%--------------------------------------------------------------------

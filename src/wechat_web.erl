@@ -11,7 +11,7 @@
 -include("include/wechat.hrl").
 
 %% API
--export([get_access_token/1, get_userinfo/2, refresh_token/1, get_code_url/0]).
+-export([get_access_token/1, get_userinfo/2, refresh_token/1, get_code_url/0, get_app_access_token/0]).
 
 get_code_url()->
   {ok,Appid} = application:get_env(wechat_zh,appid),
@@ -51,3 +51,12 @@ get_userinfo(ACCESS_TOKEN,OPENID) ->
   lager:debug("~n Userinfo_Url = ~p~n", [Userinfo_Url]),
   Userinfo= wechat_util:http_get(Userinfo_Url),
   Userinfo.
+
+get_app_access_token() ->
+  {ok,Appid} = application:get_env(wechat_zh,appid),
+  {ok,Secret} = application:get_env(wechat_zh,secret),
+  %Access_token_Rui = "https://api.weixin.qq.com/sns/oauth2/access_token?appid="++Appid++"&secret="++Secret++"&code="++binary_to_list(Code)++"&grant_type=authorization_code",
+  Access_token_Rui = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&"++"appid="++Appid++"&secret="++Secret,
+  lager:debug("~n Access_token_Rui = ~p~n", [Access_token_Rui]),
+  Response= wechat_util:http_get(Access_token_Rui),
+  Response.

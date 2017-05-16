@@ -20,9 +20,12 @@ http_post(URL, Body) ->
 	Type = "application/json",
 	HTTPOptions = [],
 	Options = [],
-	httpc:request(Method, {URL, Header, Type, Body}, HTTPOptions, Options),
-	Response = jsx:decode(Body),
-	Response.
+	{ok, {_,_,Body2}}=httpc:request(Method, {URL, Header, Type, Body}, HTTPOptions, Options),
+	lager:debug("Response:~p:",[Body2]),
+	Body3 = jsx:decode(list_to_binary(Body2)),
+	Body3.
+
+
 
 binstring(S) -> fun_apply(S, fun list_to_binary/1, fun(X)->X end).
 hexstring(S) -> fun_apply(S, fun list_to_binary/1, fun bin2hex/1).
