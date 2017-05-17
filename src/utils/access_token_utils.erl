@@ -10,7 +10,7 @@
 -author("jiarj").
 
 %% API
--export([init_access_token/0, test/0]).
+-export([init_access_token/0, test/0, test2/0]).
 
 init_access_token()->
   Access_token_json = wechat_web:get_app_access_token(),
@@ -37,3 +37,24 @@ test()->
   {ok,Access_token} =application:get_env(wechat_zh,access_token),
   lager:debug("Access_token:~p:",[Access_token]),
   wechat_message:send_template_message(Access_token,Msg2).
+
+test2()->
+  Openid= <<"ofD9N0wpZmyZrpT5A4FobW055TKY">>,
+  Template_id= <<"cdXULRt1bHYVlXi5Ha1WbKVC5Hju47qe-wQqPrMRvWY">>,
+  Msg= <<"哪哪哪报错了"/utf8>>,
+  Keyword1 = list_to_binary(xfutils:now(txn)),
+  Remark = <<"请尽快处理！"/utf8>>,
+  Msg2 = [
+    {<<"touser">>,Openid}
+    ,{<<"template_id">>,Template_id}
+    ,{<<"data">>,[
+      {<<"first">>,[{<<"value">>,Msg},{<<"color">>,<<"#173177">>}]}
+      ,{<<"keyword1">>,[{<<"value">>,Keyword1},{<<"color">>,<<"#173177">>}]}
+      ,{<<"remark">>,[{<<"value">>,Remark},{<<"color">>,<<"#173177">>}]}
+    ]}
+  ],
+  Body = jsx:encode(Msg2),
+  lager:debug("Body:~p",[Body]),
+  {ok,Access_token} =application:get_env(wechat_zh,access_token),
+  lager:debug("Access_token:~p:",[Access_token]),
+  wechat_message:send_template_message(Access_token,Body).
