@@ -22,7 +22,7 @@ validate_req(Vals) when is_list(Vals) ->
 get_access_token(Code)  ->
   try
     Response= wechat_web:get_access_token(Code),
-    lager:debug("~n access_token ~p~n", [Response]),
+    lager:debug("~n Response ~p~n", [Response]),
     wechat_validate:validate_access_token_resp(Response)
   catch
     _:X ->
@@ -31,21 +31,17 @@ get_access_token(Code)  ->
   end.
 
 save_access_token(Resp)  ->
-  [{<<"access_token">>,ACCESS_TOKEN},
-    {<<"expires_in">>,_Expires_in},
-    {<<"refresh_token">>,REFRESH_TOKEN},
-    {<<"openid">>,OPENID},
-    {<<"scope">>,_SCOPE}]=Resp,
+  ACCESS_TOKEN=proplists:get_value(<<"access_token">>,Resp),
+  OPENID=proplists:get_value(<<"openid">>,Resp),
+  REFRESH_TOKEN=proplists:get_value(<<"refresh_token">>,Resp),
+
   Userinfo= wechat_web:get_userinfo(ACCESS_TOKEN,OPENID),
-  [{<<"openid">>,OPENID},
-    {<<"nickname">>,Nickname},
-    {<<"sex">>,Sex},
-    {<<"language">>,_Language},
-    {<<"city">>,_City},
-    {<<"province">>,_Province},
-    {<<"country">>,_Country},
-    {<<"headimgurl">>,Headimgurl},
-    {<<"privilege">>,_Privilege}]=Userinfo,
+  Nickname=proplists:get_value(<<"nickname">>,Userinfo),
+  Headimgurl=proplists:get_value(<<"headimgurl">>,Userinfo),
+  Sex=proplists:get_value(<<"sex">>,Userinfo),
+
+  ACCESS_TOKEN=proplists:get_value(<<"access_token">>,Resp),
+
   lager:debug("Userinfo ~p~n", [Userinfo]),
   Timestamp=erlang:system_time(seconds),
   lager:debug("Timestamp ~p~n", [Timestamp]),
@@ -53,22 +49,22 @@ save_access_token(Resp)  ->
   lager:debug("~n User ~p~n", [User]),
   case User of
     %%openid,access_token,refresh_token,timestamp,role= <<"empty">>,nickname,headimgurl,sex,info=[]
-    [{user_info,OPENID1,ACCESS_TOKEN1,REFRESH_TOKEN1,_Timestamp1,Role1,Nickname,Headimgurl,Sex,Info}]->
+    [{user_info,OPENID1,ACCESS_TOKEN1,REFRESH_TOKEN1,_Timestamp1,Role1,Nickname1,Headimgurl1,Sex1,Info1}]->
       %%保存用户信息到数据库
       Model=[{<<"openid">> , OPENID1}
         ,{<<"access_token">> , ACCESS_TOKEN1}
         ,{<<"refresh_token">> , REFRESH_TOKEN1}
         ,{<<"timestamp">> , Timestamp}
-        ,{<<"nickname">> , Nickname}
-        ,{<<"headimgurl">> , Headimgurl}
+        ,{<<"nickname">> , Nickname1}
+        ,{<<"headimgurl">> , Headimgurl1}
         ,{<<"role">> , Role1}
-        ,{<<"info">> , Info}
-        ,{<<"sex">> , to_binary(Sex)}],
+        ,{<<"info">> , Info1}
+        ,{<<"sex">> , to_binary(Sex1)}],
       gws_mnesia:save(repo_user,Model),
       %%生成jwt
-      Payload = [{<<"openid">>,OPENID},{<<"nickname">>,Nickname},{<<"role">>,Role1},{<<"timestamp">>,Timestamp}],
+      Payload = [{<<"openid">>,OPENID1},{<<"nickname">>,Nickname},{<<"role">>,Role1},{<<"timestamp">>,Timestamp}],
       lager:debug("~n Payload = ~p~n", [Payload]),
-      JWT = ejwt:encode(Payload, <<"secret">>),
+      {ok,JWT} = gws_auth_token:encode(Payload),
       lager:debug("~n JWT = ~p~n", [JWT]),
       JWT;
     []->
@@ -83,7 +79,7 @@ save_access_token(Resp)  ->
       gws_mnesia:save(repo_user,Model),
       %%生成jwt
       Payload = [{<<"openid">>,OPENID},{<<"nickname">>,Nickname},{<<"role">>,<<"empty">>},{<<"timestamp">>,Timestamp}],
-      JWT = ejwt:encode(Payload, <<"secret">>),
+      {ok,JWT} = gws_auth_token:encode(Payload),
       lager:debug("~n JWT = ~p~n", [JWT]),
       JWT
   end.
@@ -99,27 +95,4 @@ to_binary(Sex) when is_integer(Sex)->
 to_binary(Sex) when is_binary(Sex)->
   Sex.
 
-decode_test() ->
-  Expected = [
-    {<<"openid">>,<<"ofD9N0wpZmyZrpT5A4FobW055TKY">>}
-    ,{<<"nickname">>,<<233,131,143,228,187,129,230,157,176>>}
-    ,{<<"role">>,<<"admin">>}
-    ,{<<"timestamp">>,1494552908}
-  ],
-  JWT = <<"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-  "eyJvcGVuaWQiOiJvZkQ5TjB3cFpteVpycFQ1QTRGb2JXMDU1VEtZIiwibmlja25hbWUiOiLpg4_ku4HmnbAiLCJyb2xlIjoiYWRtaW4iLCJ0aW1lc3RhbXAiOjE0OTQ1NTI5MDh9."
-  "YTRu43ctKXlkEZKfroE469YFK0IQF_4bLfmUDtY_8so">>,
-  ?assertEqual(Expected, ejwt:decode(JWT, <<"secret">>)).
-
-encode_test() ->
-  Expected = <<"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
-  "eyJvcGVuaWQiOiJvZkQ5TjB3cFpteVpycFQ1QTRGb2JXMDU1VEtZIiwibmlja25hbWUiOiLpg4_ku4HmnbAiLCJyb2xlIjoiYWRtaW4iLCJ0aW1lc3RhbXAiOjE0OTQ1NTI5MDh9."
-  "YTRu43ctKXlkEZKfroE469YFK0IQF_4bLfmUDtY_8so">>,
-  Payload = [
-    {<<"openid">>,<<"ofD9N0wpZmyZrpT5A4FobW055TKY">>}
-    ,{<<"nickname">>,<<233,131,143,228,187,129,230,157,176>>}
-    ,{<<"role">>,<<"admin">>}
-    ,{<<"timestamp">>,1494552908}
-  ],
-  ?assertEqual(Expected, ejwt:encode(Payload, <<"secret">>)).
 
